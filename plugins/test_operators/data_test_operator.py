@@ -66,7 +66,7 @@ class NotNullTestOperator(BaseDataTestOperator):
             query=query,
             **kwargs,
         )
-        self.fail_message = "nulls"
+        self._fail_message = "nulls"
 
     def _handle_result(self, result: tuple) -> Any:
         table_name: str = self.params["table_name"]
@@ -76,14 +76,14 @@ class NotNullTestOperator(BaseDataTestOperator):
                 "Table '%s' in column '%s' have %s",
                 table_name,
                 column_name,
-                self.fail_message,
+                self._fail_message,
             )
             raise AirflowException
         self.log.info(
             "Table '%s' in column '%s' have no %s",
             table_name,
             column_name,
-            self.fail_message,
+            self._fail_message,
         )
 
 
@@ -105,4 +105,27 @@ class UniqueTestOperator(NotNullTestOperator):
             query=query,
             **kwargs,
         )
-        self.fail_message = "duplicates"
+        self._fail_message = "duplicates"
+
+
+class AcceptedValuesTestOperator(NotNullTestOperator):
+    def __init__(
+        self,
+        *args: tuple[Any, ...],
+        postgres_conn_id: str,
+        table_name: str,
+        column_name: str,
+        accepted_values: tuple[Any, ...],
+        query: Tests = Tests.ACCEPTED_VALUES,
+        **kwargs: dict[str, Any],
+    ) -> None:
+        super().__init__(
+            *args,
+            postgres_conn_id=postgres_conn_id,
+            table_name=table_name,
+            column_name=column_name,
+            query=query,
+            **kwargs,
+        )
+        self.params["accepted_values"] = accepted_values
+        self._fail_message = f"other values than {accepted_values}"
