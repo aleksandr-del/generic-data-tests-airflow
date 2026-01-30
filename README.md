@@ -21,7 +21,11 @@ Ensures column values are unique across the table.
 
 ### AcceptedValuesTestOperator
 
-Validates column values against a predefined list (placeholder).
+Validates column values against a predefined list of acceptable values.
+
+### ExpressionIsTrueTestOperator
+
+Tests custom SQL expressions for business rule validation (e.g., `unit_price >= 0`).
 
 ## Quick Start
 
@@ -36,18 +40,22 @@ docker-compose up -d
 
 - `not_null_data_test`
 - `unique_data_test`
+- `accepted_values_data_test`
+- `expression_is_true_data_test`
 
 ## Project Structure
 
 ```
 ├── dags/
-│   ├── queries/           # SQL test templates
-│   ├── not_null_dag.py    # Not null validation DAG
-│   └── unique_dag.py      # Uniqueness validation DAG
+│   ├── queries/                  # SQL test templates
+│   ├── not_null_dag.py           # Not null validation DAG
+│   ├── unique_dag.py             # Uniqueness validation DAG
+│   ├── accepted_values_dag.py    # Accepted values validation DAG
+│   └── expression_is_true_dag.py # Expression validation DAG
 ├── plugins/
-│   └── test_operators/    # Custom Airflow operators
-├── init-dwh/              # Database initialization scripts
-└── docker-compose.yml     # Airflow setup
+│   └── test_operators/           # Custom Airflow operators
+├── init-dwh/                     # Database initialization scripts
+└── docker-compose.yml            # Airflow setup
 ```
 
 ## Usage
