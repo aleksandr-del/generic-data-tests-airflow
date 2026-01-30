@@ -12,6 +12,7 @@ class Tests(StrEnum):
     NOT_NULL = "not_null.sql"
     UNIQUE = "unique.sql"
     ACCEPTED_VALUES = "accepted_values.sql"
+    EXPRESSION_IS_TRUE = "expression_is_true.sql"
 
 
 class BaseDataTestOperator(BaseOperator, ABC):
@@ -23,7 +24,6 @@ class BaseDataTestOperator(BaseOperator, ABC):
         *args: tuple[Any, ...],
         postgres_conn_id: str,
         table_name: str,
-        column_name: str,
         query: Tests,
         **kwargs: dict[str, Any],
     ) -> None:
@@ -31,7 +31,6 @@ class BaseDataTestOperator(BaseOperator, ABC):
         self.postgres_conn_id: str = postgres_conn_id
         self.params: dict[str, Any] = {
             "table_name": table_name,
-            "column_name": column_name,
         }
         self.query = query
 
@@ -62,10 +61,10 @@ class NotNullTestOperator(BaseDataTestOperator):
             *args,
             postgres_conn_id=postgres_conn_id,
             table_name=table_name,
-            column_name=column_name,
             query=query,
             **kwargs,
         )
+        self.params["column_name"] = column_name
         self._fail_message = "nulls"
 
     def _handle_result(self, result: tuple) -> Any:
@@ -129,3 +128,39 @@ class AcceptedValuesTestOperator(NotNullTestOperator):
         )
         self.params["accepted_values"] = accepted_values
         self._fail_message = f"other values than {accepted_values}"
+
+
+class ExpressionIsTrueTestOperator(BaseDataTestOperator):
+    def __init__(
+        self,
+        *args: tuple[Any, ...],
+        postgres_conn_id: str,
+        table_name: str,
+        query: Tests = Tests.EXPRESSION_IS_TRUE,
+        expression: str,
+        **kwargs: dict[str, Any],
+    ) -> None:
+        super().__init__(
+            *args,
+            postgres_conn_id=postgres_conn_id,
+            table_name=table_name,
+            query=query,
+            **kwargs,
+        )
+        self.params["expression"] = expression
+
+    def _handle_result(self, result: tuple) -> Any:
+        table_name: str = self.params["table_name"]
+        expression: str = self.params["expression"]
+        if result:
+            self.log.error(
+                "Table '%s' have records where expression '%s' is not True",
+                table_name,
+                expression,
+            )
+            raise AirflowException
+        self.log.info(
+            "Table '%s' have no records where expression '%s is not True",
+            table_name,
+            expression,
+        )
