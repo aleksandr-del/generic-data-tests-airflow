@@ -4,14 +4,14 @@ from pathlib import Path
 from airflow import DAG
 from airflow.models.baseoperator import chain
 from airflow.operators.empty import EmptyOperator
-from test_operators.data_test_operator import AcceptedValuesTestOperator
+from test_operators.data_test_operator import ExpressionIsTrueTestOperator
 
 DAG_DIR = Path(__file__).parent
 SQL_DIR = DAG_DIR / "queries"
 default_args = {"owner": "avdel", "retries": 0, "retry_delays": timedelta(seconds=5)}
 
 with DAG(
-    dag_id="accepted_values_data_test",
+    dag_id="expression_is_true_data_test",
     default_args=default_args,
     start_date=datetime(2026, 1, 29),
     schedule_interval="@once",
@@ -20,19 +20,19 @@ with DAG(
 ) as dag:
     start, end = (EmptyOperator(task_id=task) for task in "start end".split())
 
-    tables = "products orders employees".split()
-    columns = "discontinued ship_via city".split()
-    values = ((0, 1), (1, 2, 3), ("London", "Seattle", "Redmond"))
+    tables = "order_details products orders".split()
+    expressions = (
+        "unit_price >= 0, units_in_stock >= 0, shipped_date >= order_date".split(", ")
+    )
 
     tasks = [
-        AcceptedValuesTestOperator(
-            task_id=f"accepted_values_{table}_{col}",
+        ExpressionIsTrueTestOperator(
+            task_id=f"expression_is_true_{table}",
             postgres_conn_id="postgres_conn_id",
             table_name=table,
-            column_name=col,
-            accepted_values=values,
+            expression=expression,
         )
-        for table, col, values in zip(tables, columns, values)
+        for table, expression in zip(tables, expressions)
     ]
 
     chain(start, tasks, end)

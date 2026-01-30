@@ -160,7 +160,7 @@ class ExpressionIsTrueTestOperator(BaseDataTestOperator):
             )
             raise AirflowException
         self.log.info(
-            "Table '%s' have no records where expression '%s is not True",
+            "Table '%s' have no records where expression '%s' is not True",
             table_name,
             expression,
         )
