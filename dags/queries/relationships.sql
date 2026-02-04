@@ -1,14 +1,14 @@
 WITH child AS (
     SELECT
-        {{ params.column_name }} AS from_field
+        {{ params.from_column }} AS from_field
     FROM {{ params.table_name }}
-    WHERE {{ params.column_name }} IS NOT NULL
+    WHERE {{ params.from_column }} IS NOT NULL
 ),
 
 parent AS (
     SELECT
-        {{ params.reference_field }} AS to_field
-    FROM {{ params.reference_table }}
+        {{ params.to_column }} AS to_field
+    FROM {{ params.to_table }}
 )
 
 SELECT

@@ -165,3 +165,51 @@ class ExpressionIsTrueTestOperator(BaseDataTestOperator):
             table_name,
             expression,
         )
+
+
+class RelationshipsTestOperator(BaseDataTestOperator):
+    def __init__(
+        self,
+        *args: tuple[Any, ...],
+        postgres_conn_id: str,
+        table_name: str,
+        query: Tests = Tests.RELATIONSHIPS,
+        from_column: str,
+        to_table: str,
+        to_column: str,
+        **kwargs: dict[str, Any],
+    ) -> None:
+        super().__init__(
+            *args,
+            postgres_conn_id=postgres_conn_id,
+            table_name=table_name,
+            query=query,
+            **kwargs,
+        )
+        self.params["from_column"] = from_column
+        self.params["to_table"] = to_table
+        self.params["to_column"] = to_column
+
+    def _handle_result(self, result: tuple) -> Any:
+        from_table: str = self.params["table_name"]
+        from_column: str = self.params["from_column"]
+        to_table: str = self.params["to_table"]
+        to_column: str = self.params["to_column"]
+        if result:
+            self.log.error(
+                "Relationship test failed: records in '%s.%s' do not exist in '%s.%s'",
+                from_table,
+                from_column,
+                to_table,
+                to_column,
+            )
+            raise AirflowException(
+                f"Broken relationship: '{from_table}.{from_column}' -> '{to_table}.{to_column}'"
+            )
+        self.log.info(
+            "Relationship test passed: all records in '%s.%s' exist in '%s.%s'",
+            from_table,
+            from_column,
+            to_table,
+            to_column,
+        )
