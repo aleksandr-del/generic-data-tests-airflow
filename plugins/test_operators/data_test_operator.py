@@ -13,6 +13,7 @@ class Tests(StrEnum):
     UNIQUE = "unique.sql"
     ACCEPTED_VALUES = "accepted_values.sql"
     EXPRESSION_IS_TRUE = "expression_is_true.sql"
+    RELATIONSHIPS = "relationships.sql"
 
 
 class BaseDataTestOperator(BaseOperator, ABC):
