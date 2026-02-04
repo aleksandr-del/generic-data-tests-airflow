@@ -27,6 +27,10 @@ Validates column values against a predefined list of acceptable values.
 
 Tests custom SQL expressions for business rule validation (e.g., `unit_price >= 0`).
 
+### RelationshipsTestOperator
+
+Validates referential integrity between tables by checking foreign key relationships.
+
 ## Quick Start
 
 1. **Start Services**
@@ -42,6 +46,7 @@ docker-compose up -d
 - `unique_data_test`
 - `accepted_values_data_test`
 - `expression_is_true_data_test`
+- `relationships_data_test`
 
 ## Project Structure
 
@@ -51,7 +56,8 @@ docker-compose up -d
 │   ├── not_null_dag.py           # Not null validation DAG
 │   ├── unique_dag.py             # Uniqueness validation DAG
 │   ├── accepted_values_dag.py    # Accepted values validation DAG
-│   └── expression_is_true_dag.py # Expression validation DAG
+│   ├── expression_is_true_dag.py # Expression validation DAG
+│   └── relationships_dag.py      # Relationships validation DAG
 ├── plugins/
 │   └── test_operators/           # Custom Airflow operators
 ├── init-dwh/                     # Database initialization scripts
@@ -74,6 +80,15 @@ NotNullTestOperator(
     postgres_conn_id="postgres_conn_id",
     table_name="products",
     column_name="product_name"
+)
+
+RelationshipsTestOperator(
+    task_id="relationships_orders_customer",
+    postgres_conn_id="postgres_conn_id",
+    table_name="orders",
+    from_column="customer_id",
+    to_table="customers",
+    to_column="customer_id"
 )
 ```
 
