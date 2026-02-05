@@ -9,6 +9,21 @@ A dbt-like data testing framework built on Apache Airflow with custom operators 
 - **Northwind Dataset**: Pre-populated sample database for testing
 - **Parallel Execution**: Leverage Airflow's task parallelization
 
+## Sample Data Updates
+
+The orders table has been updated with realistic date ranges for testing:
+
+```sql
+-- Set order_date to 3-13 days ago
+UPDATE orders SET order_date = (current_date - ceiling(random() * 10 + 3) * interval '1 day')::date;
+
+-- Set required_date to 10 days after order_date
+UPDATE orders SET required_date = (order_date + interval '10 day')::date;
+
+-- Set shipped_date to 1-4 days after order_date
+UPDATE orders SET shipped_date = (order_date + ceiling((random() * 10 + 1) / 3) * interval '1 day')::date;
+```
+
 ## Test Types
 
 ### NotNullTestOperator
@@ -31,6 +46,10 @@ Tests custom SQL expressions for business rule validation (e.g., `unit_price >= 
 
 Validates referential integrity between tables by checking foreign key relationships.
 
+### FreshnessTestOperator
+
+Validates data freshness by checking if records exist within a specified time window from the execution date. Uses Jinja's `{{ ds }}` template variable making tests idempotent across reruns.
+
 ## Quick Start
 
 1. **Start Services**
@@ -47,6 +66,7 @@ docker-compose up -d
 - `accepted_values_data_test`
 - `expression_is_true_data_test`
 - `relationships_data_test`
+- `freshness_data_test`
 
 ## Project Structure
 
@@ -57,7 +77,8 @@ docker-compose up -d
 │   ├── unique_dag.py             # Uniqueness validation DAG
 │   ├── accepted_values_dag.py    # Accepted values validation DAG
 │   ├── expression_is_true_dag.py # Expression validation DAG
-│   └── relationships_dag.py      # Relationships validation DAG
+│   ├── relationships_dag.py      # Relationships validation DAG
+│   └── freshness_dag.py          # Freshness validation DAG
 ├── plugins/
 │   └── test_operators/           # Custom Airflow operators
 ├── init-dwh/                     # Database initialization scripts
@@ -89,6 +110,15 @@ RelationshipsTestOperator(
     from_column="customer_id",
     to_table="customers",
     to_column="customer_id"
+)
+
+FreshnessTestOperator(
+    task_id="freshness_orders_order_date",
+    postgres_conn_id="postgres_conn_id",
+    table_name="orders",
+    column_name="order_date",
+    count="1",
+    period="day"
 )
 ```
 
