@@ -14,6 +14,7 @@ class Tests(StrEnum):
     ACCEPTED_VALUES = "accepted_values.sql"
     EXPRESSION_IS_TRUE = "expression_is_true.sql"
     RELATIONSHIPS = "relationships.sql"
+    FRESHNESS = "freshness.sql"
 
 
 class BaseDataTestOperator(BaseOperator, ABC):
@@ -212,4 +213,47 @@ class RelationshipsTestOperator(BaseDataTestOperator):
             from_column,
             to_table,
             to_column,
+        )
+
+
+class FreshnessTestOperator(BaseDataTestOperator):
+    def __init__(
+        self,
+        *args: tuple[Any, ...],
+        postgres_conn_id: str,
+        table_name: str,
+        query: Tests = Tests.FRESHNESS,
+        column_name: str,
+        period: str,
+        count: str,
+        **kwargs: dict[str, Any],
+    ) -> None:
+        super().__init__(
+            *args,
+            postgres_conn_id=postgres_conn_id,
+            table_name=table_name,
+            query=query,
+            **kwargs,
+        )
+        self.params["column_name"] = column_name
+        self.params["period"] = period
+        self.params["count"] = count
+
+    def _handle_result(self, result: tuple) -> Any:
+        table_name: str = self.params["table_name"]
+        column_name: str = self.params["column_name"]
+        threshold: str = f"{self.params['count']} {self.params['period']}"
+        if not result or result[0] is None:
+            self.log.error(
+                "Freshness check failed: No records found in '%s.%s' for the last %s",
+                table_name,
+                column_name,
+                threshold,
+            )
+            raise AirflowException(f"Data in {table_name} is stale!")
+        self.log.info(
+            "Freshness check passed: Last record in '%s.%s' is %s",
+            table_name,
+            column_name,
+            result[0],
         )
