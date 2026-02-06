@@ -15,6 +15,7 @@ class Tests(StrEnum):
     EXPRESSION_IS_TRUE = "expression_is_true.sql"
     RELATIONSHIPS = "relationships.sql"
     FRESHNESS = "freshness.sql"
+    SCHEMA_CHECK = "schema_check.sql"
 
 
 class BaseDataTestOperator(BaseOperator, ABC):
@@ -45,7 +46,7 @@ class BaseDataTestOperator(BaseOperator, ABC):
         with postgres_hook.get_conn() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(self.query)
-                result: tuple = cursor.fetchone()
+                result: tuple = cursor.fetchall()
                 self._handle_result(result)
 
 
@@ -256,4 +257,41 @@ class FreshnessTestOperator(BaseDataTestOperator):
             table_name,
             column_name,
             result[0],
+        )
+
+
+class SchemaCheckTestOperator(BaseDataTestOperator):
+    def __init__(
+        self,
+        *args: tuple[Any, ...],
+        postgres_conn_id: str,
+        table_name: str,
+        query: Tests = Tests.SCHEMA_CHECK,
+        schema: dict[str, str],
+        **kwargs: dict[str, Any],
+    ) -> None:
+        super().__init__(
+            *args,
+            postgres_conn_id=postgres_conn_id,
+            table_name=table_name,
+            query=query,
+            **kwargs,
+        )
+        self.params["schema"] = schema
+
+    def _handle_result(self, result: tuple) -> Any:
+        table_name: str = self.params["table_name"]
+        if result:
+            message = ", ".join(
+                f"column '{col_name}' with type '{dtype}'" for col_name, dtype in result
+            )
+            self.log.error(
+                "For table '%s' expected %s, but it's missing or has a different type",
+                table_name,
+                message,
+            )
+            raise AirflowException(f"For table '{table_name}' the schema test failed!")
+        self.log.info(
+            "For table '%s' the schema test passed!",
+            table_name,
         )
