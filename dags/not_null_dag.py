@@ -8,7 +8,7 @@ from test_operators.data_test_operator import NotNullTestOperator
 
 DAG_DIR = Path(__file__).parent
 SQL_DIR = DAG_DIR / "queries"
-default_args = {"owner": "avdel", "retries": 1, "retry_delays": timedelta(seconds=5)}
+default_args = {"owner": "avdel", "retries": 0, "retry_delays": timedelta(seconds=5)}
 
 with DAG(
     dag_id="not_null_data_test",

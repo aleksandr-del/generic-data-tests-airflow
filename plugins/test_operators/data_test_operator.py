@@ -244,7 +244,7 @@ class FreshnessTestOperator(BaseDataTestOperator):
         table_name: str = self.params["table_name"]
         column_name: str = self.params["column_name"]
         threshold: str = f"{self.params['count']} {self.params['period']}"
-        if not result or result[0] is None:
+        if not result or result[0][0] is None:
             self.log.error(
                 "Freshness check failed: No records found in '%s.%s' for the last %s",
                 table_name,
@@ -256,7 +256,7 @@ class FreshnessTestOperator(BaseDataTestOperator):
             "Freshness check passed: Last record in '%s.%s' is %s",
             table_name,
             column_name,
-            result[0],
+            result[0][0],
         )
 
 

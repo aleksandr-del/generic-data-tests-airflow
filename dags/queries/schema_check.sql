@@ -3,7 +3,7 @@ WITH expected_schema AS (
     SELECT
         '{{ col_name }}' as col_name,
         '{{ dtype }}' as dtype
-    {%- if not loop.last %}UNION ALL{% endif %}
+    {% if not loop.last %}UNION ALL{% endif %}
     {%- endfor %}
 ),
 
