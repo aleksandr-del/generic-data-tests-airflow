@@ -50,6 +50,15 @@ Validates referential integrity between tables by checking foreign key relations
 
 Validates data freshness by checking if records exist within a specified time window from the execution date. Uses Jinja's `{{ ds }}` template variable making tests idempotent across reruns.
 
+### SchemaCheckTestOperator
+
+Validates table schema by comparing expected column names and data types against the actual database schema. Uses `EXCEPT` to identify mismatches.
+
+**Jinja Techniques:**
+- **Dynamic row generation**: `{% for col_name, dtype in params.schema.items() %}` iterates over schema dictionary to build expected schema CTE
+- **Conditional UNION ALL**: `{% if not loop.last %}UNION ALL{% endif %}` adds row separator only between items, not after the last one
+- **Loop context**: `loop.last` is a Jinja magic variable available inside loops for conditional logic
+
 ## Quick Start
 
 1. **Start Services**
@@ -67,6 +76,7 @@ docker-compose up -d
 - `expression_is_true_data_test`
 - `relationships_data_test`
 - `freshness_data_test`
+- `schema_check_data_test`
 
 ## Project Structure
 
@@ -78,7 +88,8 @@ docker-compose up -d
 │   ├── accepted_values_dag.py    # Accepted values validation DAG
 │   ├── expression_is_true_dag.py # Expression validation DAG
 │   ├── relationships_dag.py      # Relationships validation DAG
-│   └── freshness_dag.py          # Freshness validation DAG
+│   ├── freshness_dag.py          # Freshness validation DAG
+│   └── schema_check_dag.py       # Schema validation DAG
 ├── plugins/
 │   └── test_operators/           # Custom Airflow operators
 ├── init-dwh/                     # Database initialization scripts
@@ -119,6 +130,17 @@ FreshnessTestOperator(
     column_name="order_date",
     count="1",
     period="day"
+)
+
+SchemaCheckTestOperator(
+    task_id="schema_check_products",
+    postgres_conn_id="postgres_conn_id",
+    table_name="products",
+    schema={
+        "product_id": "smallint",
+        "product_name": "character varying",
+        "unit_price": "real"
+    }
 )
 ```
 
