@@ -59,6 +59,15 @@ Validates table schema by comparing expected column names and data types against
 - **Conditional UNION ALL**: `{% if not loop.last %}UNION ALL{% endif %}` adds row separator only between items, not after the last one
 - **Loop context**: `loop.last` is a Jinja magic variable available inside loops for conditional logic
 
+### BlackListTestOperator
+
+Validates that text columns don't contain unwanted patterns using PostgreSQL regex matching. Checks multiple columns against multiple patterns simultaneously.
+
+**Jinja Techniques:**
+- **Nested loops**: Outer loop iterates columns, inner loop iterates patterns for each column
+- **Regex matching**: Uses PostgreSQL `~` operator for pattern validation
+- **Dynamic UNION ALL**: Combines results from multiple column checks into a single query
+
 ## Quick Start
 
 1. **Start Services**
@@ -77,6 +86,7 @@ docker-compose up -d
 - `relationships_data_test`
 - `freshness_data_test`
 - `schema_check_data_test`
+- `blacklist_patterns_data_test`
 
 ## Project Structure
 
@@ -89,7 +99,8 @@ docker-compose up -d
 │   ├── expression_is_true_dag.py # Expression validation DAG
 │   ├── relationships_dag.py      # Relationships validation DAG
 │   ├── freshness_dag.py          # Freshness validation DAG
-│   └── schema_check_dag.py       # Schema validation DAG
+│   ├── schema_check_dag.py       # Schema validation DAG
+│   └── blacklist_patterns_dag.py # Blacklist patterns validation DAG
 ├── plugins/
 │   └── test_operators/           # Custom Airflow operators
 ├── init-dwh/                     # Database initialization scripts
@@ -141,6 +152,14 @@ SchemaCheckTestOperator(
         "product_name": "character varying",
         "unit_price": "real"
     }
+)
+
+BlackListTestOperator(
+    task_id="blacklist_customers_phone",
+    postgres_conn_id="postgres_conn_id",
+    table_name="customers",
+    column_names=["phone"],
+    patterns=["^0+$", "^[0-9]{1,5}$", ".*\?.*"]
 )
 ```
 
