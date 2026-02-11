@@ -16,6 +16,7 @@ class Tests(StrEnum):
     RELATIONSHIPS = "relationships.sql"
     FRESHNESS = "freshness.sql"
     SCHEMA_CHECK = "schema_check.sql"
+    BLACKLIST_PATTERNS = "blacklist_patterns.sql"
 
 
 class BaseDataTestOperator(BaseOperator, ABC):
@@ -293,5 +294,46 @@ class SchemaCheckTestOperator(BaseDataTestOperator):
             raise AirflowException(f"For table '{table_name}' the schema test failed!")
         self.log.info(
             "For table '%s' the schema test passed!",
+            table_name,
+        )
+
+
+class BlackListTestOperator(BaseDataTestOperator):
+    def __init__(
+        self,
+        *args: tuple[Any, ...],
+        postgres_conn_id: str,
+        table_name: str,
+        query: Tests = Tests.BLACKLIST_PATTERNS,
+        column_names: list[str],
+        patterns: list[str],
+        **kwargs: dict[str, Any],
+    ) -> None:
+        super().__init__(
+            *args,
+            postgres_conn_id=postgres_conn_id,
+            table_name=table_name,
+            query=query,
+            **kwargs,
+        )
+        self.params["column_names"] = column_names
+        self.params["patterns"] = patterns
+
+    def _handle_result(self, result: tuple) -> Any:
+        table_name: str = self.params["table_name"]
+        if result:
+            message = ", ".join(
+                f"in column '{col_name}' -> '{value}'" for col_name, value in result
+            )
+            self.log.error(
+                "In table '%s' found values: %s",
+                table_name,
+                message,
+            )
+            raise AirflowException(
+                f"For table '{table_name}' the blacklist test failed!"
+            )
+        self.log.info(
+            "For table '%s' the blacklist test passed!",
             table_name,
         )
