@@ -68,6 +68,14 @@ Validates that text columns don't contain unwanted patterns using PostgreSQL reg
 - **Regex matching**: Uses PostgreSQL `~` operator for pattern validation
 - **Dynamic UNION ALL**: Combines results from multiple column checks into a single query
 
+### TimeGapTestOperator
+
+Validates date/timestamp continuity by detecting missing dates in a sequence. Uses `generate_series()` to create expected date range and identifies gaps through LEFT JOIN comparison.
+
+**Jinja Techniques:**
+- **Interval parameterization**: `'{{ params.interval }}'::interval` allows flexible time periods (1 day, 1 hour, etc.)
+- **Date casting**: Ensures consistent date comparison with `::date` casting
+
 ## Quick Start
 
 1. **Start Services**
@@ -87,6 +95,7 @@ docker-compose up -d
 - `freshness_data_test`
 - `schema_check_data_test`
 - `blacklist_patterns_data_test`
+- `time_gap_data_test`
 
 ## Project Structure
 
@@ -100,7 +109,8 @@ docker-compose up -d
 │   ├── relationships_dag.py      # Relationships validation DAG
 │   ├── freshness_dag.py          # Freshness validation DAG
 │   ├── schema_check_dag.py       # Schema validation DAG
-│   └── blacklist_patterns_dag.py # Blacklist patterns validation DAG
+│   ├── blacklist_patterns_dag.py # Blacklist patterns validation DAG
+│   └── time_gap_dag.py           # Time gap validation DAG
 ├── plugins/
 │   └── test_operators/           # Custom Airflow operators
 ├── init-dwh/                     # Database initialization scripts
@@ -160,6 +170,14 @@ BlackListTestOperator(
     table_name="customers",
     column_names=["phone"],
     patterns=["^0+$", "^[0-9]{1,5}$", ".*\?.*"]
+)
+
+TimeGapTestOperator(
+    task_id="time_gap_orders_order_date",
+    postgres_conn_id="postgres_conn_id",
+    table_name="orders",
+    column_name="order_date",
+    interval="1 day"
 )
 ```
 
