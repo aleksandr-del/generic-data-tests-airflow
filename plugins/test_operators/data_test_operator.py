@@ -17,6 +17,7 @@ class Tests(StrEnum):
     FRESHNESS = "freshness.sql"
     SCHEMA_CHECK = "schema_check.sql"
     BLACKLIST_PATTERNS = "blacklist_patterns.sql"
+    TIME_GAP = "time_gap.sql"
 
 
 class BaseDataTestOperator(BaseOperator, ABC):
@@ -336,4 +337,44 @@ class BlackListTestOperator(BaseDataTestOperator):
         self.log.info(
             "For table '%s' the blacklist test passed!",
             table_name,
+        )
+
+
+class TimeGapTestOperator(BaseDataTestOperator):
+    def __init__(
+        self,
+        *args: tuple[Any, ...],
+        postgres_conn_id: str,
+        table_name: str,
+        query: Tests = Tests.TIME_GAP,
+        column_name: str,
+        interval: str = "1 day",
+        **kwargs: dict[str, Any],
+    ) -> None:
+        super().__init__(
+            *args,
+            postgres_conn_id=postgres_conn_id,
+            table_name=table_name,
+            query=query,
+            **kwargs,
+        )
+        self.params["column_name"] = column_name
+        self.params["interval"] = interval
+
+    def _handle_result(self, result: tuple) -> Any:
+        table_name: str = self.params["table_name"]
+        column_name: str = self.params["column_name"]
+        if result:
+            message = ", ".join(str(date) for date, *_ in result[:10])
+            self.log.error(
+                "Time gap detected in '%s.%s'. Missing dates: %s ...",
+                table_name,
+                column_name,
+                message,
+            )
+            raise AirflowException(
+                f"Found {len(result)} missing dates in '{table_name}.{column_name}'!"
+            )
+        self.log.info(
+            "For table '%s.%s' the time_gap test passed!", table_name, column_name
         )
